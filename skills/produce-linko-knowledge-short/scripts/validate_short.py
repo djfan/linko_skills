@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -51,6 +52,14 @@ def run(command: list[str]) -> subprocess.CompletedProcess[str]:
 
 def require_tools() -> list[str]:
     return [name for name in ("ffprobe", "ffmpeg") if shutil.which(name) is None]
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def fraction(value: str) -> float:
@@ -236,6 +245,7 @@ def main() -> int:
 
     report: dict[str, Any] = {
         "video": str(video),
+        "sha256": sha256_file(video),
         "passed": all(check["passed"] for check in checks),
         "media": {
             "duration_seconds": duration,

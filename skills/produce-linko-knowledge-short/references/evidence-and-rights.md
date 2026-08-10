@@ -28,14 +28,16 @@ Record every visual, audio, font, and product-capture asset in `asset-manifest.j
 
 - owner and canonical URL;
 - local path and checksum when available;
-- excerpt timecodes or lines;
+- an explicit `rights_basis` reviewed by a human;
+- an `evidence_reference` containing at least one `timecode`, `page`, `line`, or `section` locator;
+- one or more `evidence_ids` that exist in the `research.md` evidence ledger;
 - transformation purpose;
 - rights state;
 - privacy state;
 - placeholder state;
 - human approval.
 
-Use explicit rights states such as `pending`, `owned`, `licensed`, `public-domain`, `authorized`, or `human-approved`. Unknown or pending rights block `publish-approved` status.
+Use explicit rights states such as `pending`, `owned`, `licensed`, `public-domain`, `authorized`, or `human-approved`. A rights state is not a rights basis: record why the exact excerpt is considered usable and who reviewed that decision. Unknown or pending rights, a missing locator, or an unlinked evidence ID blocks `publish-approved` status.
 
 ## Rights boundary
 

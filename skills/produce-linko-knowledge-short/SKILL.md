@@ -60,6 +60,7 @@ Keep these outputs predictable:
 - `asset-manifest.json`
 - `render/draft.mp4`
 - `qa/contact-sheet.png`
+- `qa/report.json`
 - `qa/qa-report.md`
 - `publish-copy.md`
 
@@ -84,7 +85,7 @@ Prefer the original audiovisual or textual source. Create timestamped or line-le
 - independently verified context;
 - the creator's inference.
 
-Record every claim in `research.md`. Reject a strong hook when the source only supports a weaker statement of intent, possibility, or interpretation. Do not use platform AI summaries or search snippets as final quotation evidence.
+Record every claim in `research.md`. Give each evidence-bearing asset at least one ledger ID plus an exact timecode, page, line, or section locator in `asset-manifest.json`. Reject a strong hook when the source only supports a weaker statement of intent, possibility, or interpretation. Do not use platform AI summaries or search snippets as final quotation evidence.
 
 ### 3. Rank angles before scripting
 
@@ -134,7 +135,7 @@ Generate or record two restrained takes when practical. Preserve natural breaths
 
 Render portrait video at 1080×1920 and 30 fps unless the destination requires otherwise. Keep captions inside mobile-safe margins, wrap them deliberately, and inspect frames where source subtitles or UI text could collide.
 
-Keep the final Linko action readable for several seconds. Default to `Follow for the next idea.` Add `Full notes in Linko` or another viewer-facing Linko action only after verifying a public destination.
+Keep the final Linko action readable for several seconds. Default to the structured CTA type `generic` and copy such as `Follow for the next idea.` Classify any viewer-facing Linko access claim as `public-linko`, regardless of its wording, and use it only after verifying the exact public destination in both `project-state.json` and `publish-copy.md`.
 
 ### 9. Run technical and editorial QA
 
@@ -152,7 +153,7 @@ Treat script success as technical evidence only. Inspect the contact sheet and c
 
 ### 10. Release with evidence
 
-Run `python3 scripts/validate_project.py . --release-ready` before publication. Publish only when the user explicitly approves the exact cut and destination. Strip nonessential media metadata when the destination rejects it, then re-run media integrity checks. Report:
+Run `python3 scripts/validate_project.py . --release-ready` before publication. It must bind a passing `qa/report.json` to the exact final path, SHA-256, and independently probed media parameters. Publish only when the user explicitly approves the exact cut and destination. Strip nonessential media metadata when the destination rejects it, then re-run media integrity checks. Report:
 
 - the final URL or artifact path;
 - duration, dimensions, frame rate, loudness, and hash when available;

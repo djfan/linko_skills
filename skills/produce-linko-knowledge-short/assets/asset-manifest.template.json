@@ -11,7 +11,15 @@
       "excerpt_end_seconds": null,
       "purpose": "evidence-bearing source moment",
       "rights_status": "pending",
+      "rights_basis": "",
       "privacy_status": "not-applicable",
+      "evidence_reference": {
+        "timecode": null,
+        "page": null,
+        "line": null,
+        "section": null,
+        "evidence_ids": []
+      },
       "sha256": null,
       "placeholder": false,
       "human_approved": false
@@ -26,6 +34,7 @@
       "excerpt_end_seconds": null,
       "purpose": "show the creator saving and connecting the idea",
       "rights_status": "authorized",
+      "rights_basis": "authorized demo-account capture",
       "privacy_status": "pending",
       "sha256": null,
       "placeholder": false,

@@ -83,6 +83,7 @@ shot-plan.json
 asset-manifest.json
 render/draft.mp4
 qa/contact-sheet.png
+qa/report.json
 qa/qa-report.md
 publish-copy.md
 release-checklist.md
@@ -108,7 +109,7 @@ python3 scripts/validate_project.py /path/to/project
 python3 scripts/validate_project.py /path/to/project --release-ready
 ```
 
-The validator checks duration, portrait format, frame rate, audio presence, loudness, true peak, black frames, and long silence. It cannot approve factual accuracy, caption readability, privacy, rights, recording authenticity, or publication authority; those remain manual gates.
+The media validator checks duration, portrait format, frame rate, audio presence, loudness, true peak, black frames, and long silence, then records the exact file SHA-256. Release validation independently probes the final video and requires its path, hash, and media parameters to match a passing `qa/report.json`. It cannot approve factual accuracy, caption readability, privacy, rights, recording authenticity, or publication authority; those remain manual gates.
 
 ## Optional production tools
 
@@ -128,7 +129,7 @@ At preflight, the Skill inspects the operations actually available. If an import
 
 - Use a dedicated demo account and synthetic or approved Linko data.
 - Do not commit credentials, cookies, personal exports, private notes, or third-party source media.
-- Record source owners, canonical URLs, excerpt timecodes, and the human-reviewed rights basis.
+- Record source owners, canonical URLs, a timecode/page/line/section locator, linked evidence-ledger IDs, and the human-reviewed rights basis.
 - Do not describe animated screenshots as live recordings.
 - Do not clone or imitate an identifiable voice without authorization.
 - Do not upload or publish without approval of the exact file and destination.
@@ -155,7 +156,11 @@ Open `asset-manifest.json` and resolve `rights_status`, `privacy_status`, `place
 
 ### The CTA fails validation
 
-Remove viewer-facing Linko access claims or verify a public destination in `project-state.json`. `Follow for the next idea.` remains safe without a Linko URL.
+Keep `cta_type` identical in `project-state.json` and the `publish-copy.md` frontmatter. Classify any viewer-facing Linko access promise as `public-linko`, regardless of wording, and provide the same verified public URL in both files. `generic` remains safe without a Linko URL.
+
+### Release validation rejects the final video or QA report
+
+Run `validate_short.py` against the exact `render/final.mp4` and write `qa/report.json`. Do not edit, transcode, replace, or rewrite metadata after QA; any byte change requires a fresh report and exact-file approval.
 
 ### A Linko test import cannot be cleaned up automatically
 

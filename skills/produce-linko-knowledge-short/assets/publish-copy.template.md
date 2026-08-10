@@ -1,3 +1,8 @@
+---
+cta_type: generic
+cta_destination:
+---
+
 # Publish copy
 
 ## Title

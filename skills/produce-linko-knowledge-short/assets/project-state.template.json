@@ -13,6 +13,7 @@
     "public_cta_destination": null
   },
   "cta": {
+    "type": "generic",
     "text": "Follow for the next idea.",
     "public_destination_verified": false,
     "public_destination_url": null

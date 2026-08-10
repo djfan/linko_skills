@@ -29,7 +29,7 @@ Never jump from a topic directly to media production. Record approvals and block
 - no detected black segment of 0.30 seconds or longer;
 - no detected silence below -45 dB for 0.90 seconds or longer.
 
-`validate_project.py` checks state, shot timing, asset references, rights and privacy states, placeholders, authenticated Linko capture, CTA truth, and release approvals.
+`validate_project.py` checks state, shot timing, evidence-led asset references, rights and privacy states, placeholders, authenticated Linko capture, structured CTA truth, and release approvals. In release mode it independently probes `render/final.mp4` and requires a passing `qa/report.json` whose path, SHA-256, and media parameters match that exact file.
 
 Automated success does not validate argument quality, caption readability, privacy content, legal rights, recording authenticity, voice naturalness, or taste.
 
@@ -57,6 +57,8 @@ Include the file URL, duration, dimensions, frame rate, loudness, voice provenan
 
 Require explicit approval for the exact file, destination, metadata, excerpts, rights basis, privacy review, and disclosures. Re-verify after any metadata rewrite or transcode.
 
+Use `cta_type: generic` when the CTA does not promise a public Linko destination. Use `cta_type: public-linko` for any wording that asks viewers to open, read, follow, or retrieve something in Linko. The latter requires a verified public URL recorded identically in `project-state.json` and the `publish-copy.md` frontmatter. Do not infer CTA type by scanning English phrases.
+
 For services that reject MP4 metadata, create a separate upload copy, strip nonessential tags, and confirm duration, codecs, dimensions, and audio before upload.
 
-Capture the upload response, artifact hash, and post or event identifier. A local file or attempted command is not publication evidence.
+Capture the upload response, artifact hash, and post or event identifier. A local file or attempted command is not publication evidence. Any transcode or metadata rewrite changes the exact-final contract and requires a fresh QA report and approval.

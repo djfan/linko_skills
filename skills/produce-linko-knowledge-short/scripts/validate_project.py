@@ -4,10 +4,16 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import math
+import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 REQUIRED_FILES = (
@@ -38,7 +44,7 @@ STAGES = {
 }
 APPROVED_RIGHTS = {"owned", "licensed", "public-domain", "authorized", "human-approved"}
 APPROVED_PRIVACY = {"approved", "not-applicable"}
-PUBLIC_CTA_PHRASES = ("follow me on linko", "follow my notes on linko", "full notes in linko")
+CTA_TYPES = {"generic", "public-linko"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,6 +67,89 @@ def load_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{path.name} must contain a JSON object")
     return value
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def fraction(value: str) -> float:
+    if "/" not in value:
+        return float(value)
+    numerator, denominator = value.split("/", 1)
+    return float(numerator) / float(denominator)
+
+
+def probe_media(path: Path) -> dict[str, Any]:
+    if shutil.which("ffprobe") is None:
+        raise RuntimeError("ffprobe is unavailable")
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration,size:stream=codec_name,codec_type,width,height,r_frame_rate,sample_rate,channels",
+            "-of",
+            "json",
+            str(path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "ffprobe failed")
+    try:
+        metadata = json.loads(result.stdout)
+        streams = metadata.get("streams", [])
+        video_stream = next(stream for stream in streams if stream.get("codec_type") == "video")
+        audio_stream = next((stream for stream in streams if stream.get("codec_type") == "audio"), None)
+        return {
+            "duration_seconds": float(metadata["format"]["duration"]),
+            "size_bytes": int(metadata["format"].get("size", 0)),
+            "video_codec": video_stream.get("codec_name"),
+            "width": video_stream.get("width"),
+            "height": video_stream.get("height"),
+            "fps": fraction(video_stream["r_frame_rate"]),
+            "audio_codec": audio_stream.get("codec_name") if audio_stream else None,
+            "sample_rate": int(audio_stream.get("sample_rate", 0)) if audio_stream else None,
+            "channels": audio_stream.get("channels") if audio_stream else None,
+        }
+    except (json.JSONDecodeError, KeyError, StopIteration, TypeError, ValueError) as error:
+        raise RuntimeError(f"invalid ffprobe result: {error}") from error
+
+
+def load_frontmatter(path: Path) -> dict[str, str]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}
+    values: dict[str, str] = {}
+    for line in lines[1:]:
+        if line.strip() == "---":
+            return values
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        values[key.strip()] = value.strip().strip("\"'")
+    return {}
+
+
+def valid_http_url(value: Any) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    parsed = urlparse(value)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def values_match(expected: Any, actual: Any) -> bool:
+    if isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
+        return math.isclose(float(expected), float(actual), rel_tol=1e-6, abs_tol=1e-6)
+    return expected == actual
 
 
 def add_check(
@@ -164,7 +253,7 @@ def main() -> int:
         )
 
     for asset in assets_by_id.values():
-        for field in ("kind", "owner", "local_path", "purpose", "rights_status", "privacy_status", "placeholder", "human_approved"):
+        for field in ("kind", "owner", "local_path", "purpose", "rights_status", "rights_basis", "privacy_status", "placeholder", "human_approved"):
             add_check(
                 checks,
                 f"asset:{asset.get('id')}:{field}",
@@ -188,7 +277,90 @@ def main() -> int:
         ):
             add_check(checks, f"approval:{approval}", approvals.get(approval) is True, approvals.get(approval), "true")
 
-        add_check(checks, "final_video", (project / "render/final.mp4").is_file(), (project / "render/final.mp4").is_file(), "present")
+        final_video = project / "render/final.mp4"
+        final_exists = final_video.is_file()
+        add_check(checks, "final_video", final_exists, final_exists, "present")
+        final_nonempty = final_exists and final_video.stat().st_size > 0
+        add_check(
+            checks,
+            "final_video_nonempty",
+            final_nonempty,
+            final_video.stat().st_size if final_exists else None,
+            "> 0 bytes",
+        )
+
+        probed_media: dict[str, Any] | None = None
+        probe_error: str | None = None
+        if final_nonempty:
+            try:
+                probed_media = probe_media(final_video)
+            except RuntimeError as error:
+                probe_error = str(error)
+        add_check(
+            checks,
+            "final_video_parseable",
+            probed_media is not None,
+            probed_media if probed_media is not None else probe_error,
+            "parseable video and audio media",
+        )
+
+        qa_report_path = project / "qa/report.json"
+        qa_report: dict[str, Any] | None = None
+        qa_error: str | None = None
+        if qa_report_path.is_file():
+            try:
+                qa_report = load_json(qa_report_path)
+            except ValueError as error:
+                qa_error = str(error)
+        add_check(checks, "qa_report", qa_report is not None, qa_error, "valid qa/report.json")
+        if qa_report is not None:
+            add_check(checks, "qa_report_passed", qa_report.get("passed") is True, qa_report.get("passed"), "true")
+            qa_video = qa_report.get("video")
+            qa_video_matches = False
+            if isinstance(qa_video, str):
+                try:
+                    qa_video_matches = Path(qa_video).expanduser().resolve() == final_video.resolve()
+                except OSError:
+                    qa_video_matches = False
+            add_check(checks, "qa_report_video", qa_video_matches, qa_video, str(final_video.resolve()))
+            actual_final_hash = sha256_file(final_video) if final_exists else None
+            add_check(
+                checks,
+                "qa_report_sha256",
+                qa_report.get("sha256") == actual_final_hash and actual_final_hash is not None,
+                qa_report.get("sha256"),
+                actual_final_hash or "hash of final video",
+            )
+            qa_media = qa_report.get("media") if isinstance(qa_report.get("media"), dict) else {}
+            if probed_media is not None:
+                for field, actual in probed_media.items():
+                    add_check(
+                        checks,
+                        f"qa_report_media:{field}",
+                        field in qa_media and values_match(qa_media.get(field), actual),
+                        qa_media.get(field),
+                        repr(actual),
+                    )
+                add_check(
+                    checks,
+                    "final_audio_stream",
+                    bool(probed_media.get("audio_codec")),
+                    probed_media.get("audio_codec"),
+                    "present",
+                )
+
+        expected_format = shot_plan.get("format") if isinstance(shot_plan.get("format"), dict) else {}
+        if probed_media is not None:
+            for field in ("width", "height", "fps"):
+                add_check(
+                    checks,
+                    f"final_format:{field}",
+                    field in expected_format and values_match(expected_format.get(field), probed_media.get(field)),
+                    probed_media.get(field),
+                    repr(expected_format.get(field)),
+                )
+
+        research = (project / "research.md").read_text(encoding="utf-8")
         for asset in assets_by_id.values():
             asset_id = asset.get("id")
             add_check(checks, f"release_asset:{asset_id}:rights", asset.get("rights_status") in APPROVED_RIGHTS, asset.get("rights_status"), "approved rights state")
@@ -204,7 +376,20 @@ def main() -> int:
             add_check(checks, f"release_asset:{asset_id}:sha256", valid_checksum, checksum, "64 hexadecimal characters")
             if isinstance(asset.get("kind"), str) and asset["kind"].startswith("third-party"):
                 add_check(checks, f"release_asset:{asset_id}:owner", bool(asset.get("owner")), asset.get("owner"), "non-empty")
-                add_check(checks, f"release_asset:{asset_id}:canonical_url", bool(asset.get("canonical_url")), asset.get("canonical_url"), "non-empty URL")
+                add_check(checks, f"release_asset:{asset_id}:canonical_url", valid_http_url(asset.get("canonical_url")), asset.get("canonical_url"), "valid http(s) URL")
+                add_check(checks, f"release_asset:{asset_id}:rights_basis", bool(asset.get("rights_basis")), asset.get("rights_basis"), "non-empty reviewed basis")
+                evidence = asset.get("evidence_reference") if isinstance(asset.get("evidence_reference"), dict) else {}
+                locators = {key: evidence.get(key) for key in ("timecode", "page", "line", "section")}
+                has_locator = any(value not in (None, "", []) for value in locators.values())
+                add_check(checks, f"release_asset:{asset_id}:evidence_locator", has_locator, locators, "at least one timecode, page, line, or section")
+                evidence_ids = evidence.get("evidence_ids") if isinstance(evidence.get("evidence_ids"), list) else []
+                valid_ids = bool(evidence_ids) and all(
+                    isinstance(identifier, str)
+                    and bool(identifier.strip())
+                    and re.search(rf"(?<![A-Za-z0-9_-]){re.escape(identifier)}(?![A-Za-z0-9_-])", research)
+                    for identifier in evidence_ids
+                )
+                add_check(checks, f"release_asset:{asset_id}:evidence_ids", valid_ids, evidence_ids, "non-empty IDs present in research.md")
 
         live_linko = any(
             asset.get("capture_mode") == "live"
@@ -221,12 +406,19 @@ def main() -> int:
             "true",
         )
 
-        publish_copy = (project / "publish-copy.md").read_text(encoding="utf-8").lower()
-        promises_public_linko = any(phrase in publish_copy for phrase in PUBLIC_CTA_PHRASES)
         cta = state.get("cta") if isinstance(state.get("cta"), dict) else {}
-        if promises_public_linko:
+        cta_type = cta.get("type")
+        publish_frontmatter = load_frontmatter(project / "publish-copy.md")
+        publish_cta_type = publish_frontmatter.get("cta_type")
+        add_check(checks, "cta_type", cta_type in CTA_TYPES, cta_type, "generic or public-linko")
+        add_check(checks, "publish_cta_type", publish_cta_type in CTA_TYPES, publish_cta_type, "generic or public-linko")
+        add_check(checks, "cta_type_matches_publish_copy", publish_cta_type == cta_type, publish_cta_type, repr(cta_type))
+        if cta_type == "public-linko":
             add_check(checks, "public_cta_verified", cta.get("public_destination_verified") is True, cta.get("public_destination_verified"), "true")
-            add_check(checks, "public_cta_url", bool(cta.get("public_destination_url")), cta.get("public_destination_url"), "non-empty URL")
+            state_destination = cta.get("public_destination_url")
+            publish_destination = publish_frontmatter.get("cta_destination")
+            add_check(checks, "public_cta_url", valid_http_url(state_destination), state_destination, "valid http(s) URL")
+            add_check(checks, "public_cta_destination_matches", publish_destination == state_destination, publish_destination, repr(state_destination))
 
     passed = all(check["passed"] for check in checks)
     report = {

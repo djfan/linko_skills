@@ -19,12 +19,12 @@
 
 - [ ] Linko capture shows only demo or approved data.
 - [ ] Notifications, identifiers, and unrelated notes are absent.
-- [ ] Every third-party excerpt has owner, URL, timecode, and a human-reviewed rights basis.
+- [ ] Every third-party excerpt has owner, URL, timecode/page/line/section, linked evidence IDs, and a human-reviewed rights basis.
 - [ ] The outro promises only a destination or action that exists.
 
 ## Technical QA
 
-- [ ] `validate_short.py` passes or every exception is approved.
+- [ ] `validate_short.py` passes and `qa/report.json` matches the exact final path and SHA-256.
 - [ ] Contact sheet and targeted caption frames were visually inspected.
 - [ ] Final upload copy was rechecked after metadata changes or transcoding.
 
