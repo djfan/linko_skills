@@ -141,6 +141,10 @@ The workflow was distilled from a real Linko knowledge-Short production and incl
 
 Install FFmpeg with the package manager for your platform, then rerun `validate_short.py`.
 
+### The Skill Installer reports a local Python certificate error
+
+Retry the installation command with `--method git`. This uses the installer's supported git sparse-checkout path instead of the ZIP download path.
+
 ### Linko capture is blocked
 
 Provide an authenticated demo browser session. Do not add OAuth or tokens to the project and do not relabel screenshot prototypes as live capture.
