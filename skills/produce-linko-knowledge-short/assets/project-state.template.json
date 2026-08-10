@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "status": "draft",
+  "stage": "preflight",
+  "blocker": null,
+  "capabilities": {
+    "linko_read": null,
+    "linko_add_resource": null,
+    "linko_write_or_edit_note": null,
+    "linko_edit_or_delete_resource": null,
+    "linko_authenticated_browser": null,
+    "ffmpeg": null,
+    "public_cta_destination": null
+  },
+  "cta": {
+    "text": "Follow for the next idea.",
+    "public_destination_verified": false,
+    "public_destination_url": null
+  },
+  "approvals": {
+    "editorial_angle": false,
+    "script_and_shot_plan": false,
+    "rights": false,
+    "privacy": false,
+    "phone_qa": false,
+    "exact_final_file": false,
+    "publication_destination": false
+  },
+  "manual_cleanup": []
+}

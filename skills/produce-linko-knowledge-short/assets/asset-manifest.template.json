@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "primary-source",
+      "kind": "third-party-source",
+      "owner": "",
+      "canonical_url": "",
+      "local_path": "assets/source/",
+      "excerpt_start_seconds": null,
+      "excerpt_end_seconds": null,
+      "purpose": "evidence-bearing source moment",
+      "rights_status": "pending",
+      "privacy_status": "not-applicable",
+      "sha256": null,
+      "placeholder": false,
+      "human_approved": false
+    },
+    {
+      "id": "linko-capture",
+      "kind": "linko-capture",
+      "owner": "Linko demo account",
+      "canonical_url": null,
+      "local_path": "assets/linko/",
+      "excerpt_start_seconds": 0,
+      "excerpt_end_seconds": null,
+      "purpose": "show the creator saving and connecting the idea",
+      "rights_status": "authorized",
+      "privacy_status": "pending",
+      "sha256": null,
+      "placeholder": false,
+      "capture_mode": "live",
+      "authenticated_session_verified": false,
+      "human_approved": false
+    }
+  ]
+}

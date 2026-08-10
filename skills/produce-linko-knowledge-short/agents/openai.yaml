@@ -1,0 +1,4 @@
+interface:
+  display_name: "Produce Linko Knowledge Short"
+  short_description: "Produce evidence-led, knowledge-first Linko Shorts"
+  default_prompt: "Use $produce-linko-knowledge-short to turn this source and my Linko notes into a verified English YouTube Short."
