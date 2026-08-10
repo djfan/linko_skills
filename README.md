@@ -129,7 +129,7 @@ At preflight, the Skill inspects the operations actually available. If an import
 
 - Use a dedicated demo account and synthetic or approved Linko data.
 - Do not commit credentials, cookies, personal exports, private notes, or third-party source media.
-- Record source owners, canonical URLs, a timecode/page/line/section locator, linked evidence-ledger IDs, and the human-reviewed rights basis.
+- Record source owners, canonical URLs, a timecode/page/line/section locator, complete verified evidence-ledger rows, and the human-reviewed rights basis.
 - Do not describe animated screenshots as live recordings.
 - Do not clone or imitate an identifiable voice without authorization.
 - Do not upload or publish without approval of the exact file and destination.

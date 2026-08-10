@@ -7,7 +7,6 @@ import argparse
 import hashlib
 import json
 import math
-import re
 import shutil
 import subprocess
 import sys
@@ -45,6 +44,24 @@ STAGES = {
 APPROVED_RIGHTS = {"owned", "licensed", "public-domain", "authorized", "human-approved"}
 APPROVED_PRIVACY = {"approved", "not-applicable"}
 CTA_TYPES = {"generic", "public-linko"}
+EVIDENCE_TYPES = {
+    "SOURCE_QUOTE",
+    "SOURCE_PARAPHRASE",
+    "VERIFIED_CONTEXT",
+    "CREATOR_INFERENCE",
+}
+VERIFIED_EVIDENCE_STATUSES = {"verified", "approved", "ready"}
+REQUIRED_QA_CHECKS = {
+    "duration_seconds",
+    "width",
+    "height",
+    "fps",
+    "audio_stream",
+    "integrated_lufs",
+    "true_peak_dbtp",
+    "black_segments",
+    "long_silence_segments",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -150,6 +167,23 @@ def values_match(expected: Any, actual: Any) -> bool:
     if isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
         return math.isclose(float(expected), float(actual), rel_tol=1e-6, abs_tol=1e-6)
     return expected == actual
+
+
+def evidence_ledger_row(markdown: str, identifier: str) -> dict[str, str] | None:
+    for line in markdown.splitlines():
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) >= 6 and cells[0] == identifier:
+            return {
+                "id": cells[0],
+                "type": cells[1],
+                "locator": cells[2],
+                "evidence": cells[3],
+                "planned_language": cells[4],
+                "status": cells[5].lower(),
+            }
+    return None
 
 
 def add_check(
@@ -315,6 +349,24 @@ def main() -> int:
         add_check(checks, "qa_report", qa_report is not None, qa_error, "valid qa/report.json")
         if qa_report is not None:
             add_check(checks, "qa_report_passed", qa_report.get("passed") is True, qa_report.get("passed"), "true")
+            qa_checks = qa_report.get("checks") if isinstance(qa_report.get("checks"), list) else []
+            qa_check_names = {
+                check.get("name")
+                for check in qa_checks
+                if isinstance(check, dict) and isinstance(check.get("name"), str)
+            }
+            qa_checks_passed = bool(qa_checks) and all(
+                isinstance(check, dict) and check.get("passed") is True
+                for check in qa_checks
+            )
+            add_check(checks, "qa_report_checks_passed", qa_checks_passed, qa_checks, "non-empty list with every check passed")
+            add_check(
+                checks,
+                "qa_report_checks_complete",
+                REQUIRED_QA_CHECKS.issubset(qa_check_names),
+                sorted(name for name in qa_check_names if isinstance(name, str)),
+                "all required technical QA check names",
+            )
             qa_video = qa_report.get("video")
             qa_video_matches = False
             if isinstance(qa_video, str):
@@ -383,12 +435,31 @@ def main() -> int:
                 has_locator = any(value not in (None, "", []) for value in locators.values())
                 add_check(checks, f"release_asset:{asset_id}:evidence_locator", has_locator, locators, "at least one timecode, page, line, or section")
                 evidence_ids = evidence.get("evidence_ids") if isinstance(evidence.get("evidence_ids"), list) else []
-                valid_ids = bool(evidence_ids) and all(
-                    isinstance(identifier, str)
-                    and bool(identifier.strip())
-                    and re.search(rf"(?<![A-Za-z0-9_-]){re.escape(identifier)}(?![A-Za-z0-9_-])", research)
-                    for identifier in evidence_ids
-                )
+                structured_locators = {
+                    str(value).strip()
+                    for value in locators.values()
+                    if value not in (None, "", [])
+                }
+                valid_ids = bool(evidence_ids)
+                for identifier in evidence_ids:
+                    identifier_valid = isinstance(identifier, str) and bool(identifier.strip())
+                    row = evidence_ledger_row(research, identifier) if identifier_valid else None
+                    row_valid = bool(
+                        row
+                        and row["type"] in EVIDENCE_TYPES
+                        and row["locator"] in structured_locators
+                        and row["evidence"]
+                        and row["planned_language"]
+                        and row["status"] in VERIFIED_EVIDENCE_STATUSES
+                    )
+                    add_check(
+                        checks,
+                        f"release_asset:{asset_id}:evidence_ledger:{identifier}",
+                        row_valid,
+                        row,
+                        "complete verified ledger row with matching locator",
+                    )
+                    valid_ids = valid_ids and identifier_valid and row_valid
                 add_check(checks, f"release_asset:{asset_id}:evidence_ids", valid_ids, evidence_ids, "non-empty IDs present in research.md")
 
         live_linko = any(

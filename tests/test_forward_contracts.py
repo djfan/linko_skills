@@ -44,6 +44,16 @@ def write_publish_copy(project: Path, cta_type: str, destination: str, text: str
     )
 
 
+def set_research_evidence(project: Path, locator: str) -> None:
+    path = project / "research.md"
+    content = path.read_text(encoding="utf-8")
+    content = content.replace(
+        "| C1 | SOURCE_QUOTE | | | | pending |",
+        f"| C1 | SOURCE_QUOTE | {locator} | Example verified statement. | Example script language. | verified |",
+    )
+    path.write_text(content, encoding="utf-8")
+
+
 class ForwardContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -131,6 +141,7 @@ class ForwardContractTests(unittest.TestCase):
                 asset["capture_mode"] = "live"
                 asset["authenticated_session_verified"] = True
         write_json(self.project / "asset-manifest.json", manifest)
+        set_research_evidence(self.project, "00:00:00-00:00:01")
 
         final_video = self.project / "render" / "final.mp4"
         shutil.copyfile(self.sample_video, final_video)
@@ -174,6 +185,14 @@ class ForwardContractTests(unittest.TestCase):
         source["evidence_reference"]["timecode"] = None
         source["evidence_reference"]["section"] = "Introduction, paragraph 4"
         write_json(self.project / "asset-manifest.json", manifest)
+        research_path = self.project / "research.md"
+        research_path.write_text(
+            research_path.read_text(encoding="utf-8").replace(
+                "| C1 | SOURCE_QUOTE | 00:00:00-00:00:01 |",
+                "| C1 | SOURCE_QUOTE | Introduction, paragraph 4 |",
+            ),
+            encoding="utf-8",
+        )
         result = self.validate(release_ready=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
@@ -253,6 +272,20 @@ class ForwardContractTests(unittest.TestCase):
         result = self.validate(release_ready=True)
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn('"release_asset:primary-source:evidence_ids"', result.stdout)
+
+    def test_empty_evidence_ledger_row_blocks_release(self) -> None:
+        self.make_release_ready()
+        research_path = self.project / "research.md"
+        research_path.write_text(
+            research_path.read_text(encoding="utf-8").replace(
+                "| C1 | SOURCE_QUOTE | 00:00:00-00:00:01 | Example verified statement. | Example script language. | verified |",
+                "| C1 | SOURCE_QUOTE | | | | pending |",
+            ),
+            encoding="utf-8",
+        )
+        result = self.validate(release_ready=True)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn('"release_asset:primary-source:evidence_ledger:C1"', result.stdout)
 
     def test_public_linko_cta_variants_require_verified_destination(self) -> None:
         for wording in ("Read my notes on Linko.", "See the sources I saved in Linko."):

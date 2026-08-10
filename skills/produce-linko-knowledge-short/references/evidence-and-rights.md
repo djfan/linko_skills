@@ -30,7 +30,7 @@ Record every visual, audio, font, and product-capture asset in `asset-manifest.j
 - local path and checksum when available;
 - an explicit `rights_basis` reviewed by a human;
 - an `evidence_reference` containing at least one `timecode`, `page`, `line`, or `section` locator;
-- one or more `evidence_ids` that exist in the `research.md` evidence ledger;
+- one or more `evidence_ids` whose `research.md` rows contain a matching locator, evidence text, planned language, and verified status;
 - transformation purpose;
 - rights state;
 - privacy state;
