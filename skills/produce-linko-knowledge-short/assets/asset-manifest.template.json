@@ -1,5 +1,12 @@
 {
   "version": 1,
+  "audio_render": {
+    "approved_tracks": [],
+    "ffprobe_verified": false,
+    "filter_graph_reviewed": false,
+    "music_required_by_brief": false,
+    "first_rough_cut_includes_music": false
+  },
   "assets": [
     {
       "id": "primary-source",
@@ -10,6 +17,13 @@
       "excerpt_start_seconds": null,
       "excerpt_end_seconds": null,
       "purpose": "evidence-bearing source moment",
+      "audio_policy": "discard",
+      "audio_handling": {
+        "input_audio_removed": false,
+        "approved_mix_track": null,
+        "loudness_reviewed": false,
+        "transition_reviewed": false
+      },
       "rights_status": "pending",
       "rights_basis": "",
       "privacy_status": "not-applicable",
@@ -33,12 +47,30 @@
       "excerpt_start_seconds": 0,
       "excerpt_end_seconds": null,
       "purpose": "show the creator saving and connecting the idea",
+      "audio_policy": "discard",
+      "audio_handling": {
+        "input_audio_removed": false,
+        "approved_mix_track": null,
+        "loudness_reviewed": false,
+        "transition_reviewed": false
+      },
       "rights_status": "authorized",
       "rights_basis": "authorized demo-account capture",
       "privacy_status": "pending",
       "sha256": null,
       "placeholder": false,
-      "capture_mode": "live",
+      "capture_mode": "continuous-master",
+      "capture_transport": null,
+      "capture_steps": [
+        "copy-source-url",
+        "open-add-link",
+        "paste-submit-url",
+        "resource-appears",
+        "create-structured-note",
+        "save-or-publish-note"
+      ],
+      "timeline_progression_verified": false,
+      "dynamic_frames_verified": false,
       "authenticated_session_verified": false,
       "human_approved": false
     }

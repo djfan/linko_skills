@@ -6,6 +6,8 @@
 - [ ] The Short remains complete without the Linko ending.
 - [ ] Source statements and creator inference are distinguishable.
 - [ ] The script uses conversational language and provides necessary context.
+- [ ] A source-mode change triggered a new cold-read and evidence-boundary review.
+- [ ] A cutdown, if any, has its own approved script and pacing.
 
 ## Visual and audio
 
@@ -13,11 +15,15 @@
 - [ ] Linko footage is a real authorized recording or clearly labeled review placeholder.
 - [ ] Captions are readable on a phone and do not collide with source subtitles or platform UI.
 - [ ] Voice provenance is recorded and any generated review voice is disclosed.
-- [ ] Audio transitions sound continuous and intentional.
+- [ ] The approved voice take was auditioned without music before rough cut.
+- [ ] Motion shots have unique source windows plus timeline and frame-change evidence.
+- [ ] VO-only inputs have source audio discarded; intentional source audio has approved loudness and transitions.
+- [ ] Captions are bound to the approved waveform and were checked with sound and muted.
 
 ## Privacy and rights
 
 - [ ] Linko capture shows only demo or approved data.
+- [ ] Linko is one continuous URL → Add Link → Resource → structured Note → Save/Publish master capture.
 - [ ] Notifications, identifiers, and unrelated notes are absent.
 - [ ] Every third-party excerpt has owner, URL, timecode/page/line/section, linked evidence IDs, and a human-reviewed rights basis.
 - [ ] The outro promises only a destination or action that exists.

@@ -8,6 +8,22 @@
     "target_duration_seconds": 60,
     "safe_margin_percent": 7
   },
+  "source_shot_review": {
+    "contact_sheet": "qa/source-shot-contact-sheet.png",
+    "timecode_table": "qa/source-shot-timecodes.md",
+    "approved": false
+  },
+  "captions": {
+    "waveform_sha256": null,
+    "default_words_per_phrase": {"min": 4, "max": 7},
+    "emphasis_words_per_phrase": {"min": 2, "max": 5},
+    "max_lines": 2,
+    "source_placement": "lower-third",
+    "linko_placement": "upper-third",
+    "timing_manually_corrected": false,
+    "phone_sound_qa": false,
+    "phone_muted_qa": false
+  },
   "shots": [
     {
       "id": "hook",
@@ -15,6 +31,15 @@
       "end_seconds": 7,
       "asset_id": "primary-source",
       "asset_type": "source-motion",
+      "source_start_seconds": 0,
+      "source_end_seconds": 7,
+      "visual_role": "establish source and question",
+      "unique_source_shot_id": "primary-source-000-007",
+      "audio_policy": "discard",
+      "motion_validation": {
+        "current_time_progressed": false,
+        "first_middle_final_pixel_change": false
+      },
       "voiceover": "",
       "caption": "",
       "focus": "",
@@ -26,6 +51,15 @@
       "end_seconds": 56,
       "asset_id": "linko-capture",
       "asset_type": "screen-recording",
+      "source_start_seconds": 0,
+      "source_end_seconds": 8,
+      "visual_role": "continuous Linko knowledge workflow",
+      "unique_source_shot_id": "linko-master-000-008",
+      "audio_policy": "discard",
+      "motion_validation": {
+        "current_time_progressed": false,
+        "first_middle_final_pixel_change": false
+      },
       "voiceover": "",
       "caption": "",
       "focus": "saved resource to related note",

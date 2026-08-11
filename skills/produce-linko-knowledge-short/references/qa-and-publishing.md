@@ -4,7 +4,7 @@
 
 Progress through:
 
-`preflight → source-research → angle-approval → script-and-shot-plan → rights-and-privacy → linko-capture → voice-and-edit → automated-qa → phone-qa → publication-approval → published`
+`preflight → source-research → angle-approval → script-approval → voice-audition → source-shot-approval → rights-and-privacy → linko-capture-approval → rough-cut → automated-qa → caption-phone-qa → publication-approval → published`
 
 Use these status values:
 
@@ -15,6 +15,8 @@ Use these status values:
 - `published`
 
 Never jump from a topic directly to media production. Record approvals and blockers in `project-state.json`.
+
+Each checkpoint records `PASS`, `REVISE`, or `BLOCKED` and a reviewable evidence path. Do not enter rough cut until the script, voice audition, source shots, rights/privacy, and Linko capture checkpoints pass.
 
 ## Automated QA defaults
 
@@ -29,7 +31,7 @@ Never jump from a topic directly to media production. Record approvals and block
 - no detected black segment of 0.30 seconds or longer;
 - no detected silence below -45 dB for 0.90 seconds or longer.
 
-`validate_project.py` checks state, shot timing, evidence-led asset references, rights and privacy states, placeholders, authenticated Linko capture, structured CTA truth, and release approvals. In release mode it independently probes `render/final.mp4` and requires a passing `qa/report.json` whose path, SHA-256, and media parameters match that exact file.
+`validate_project.py` checks checkpoint evidence, shot timing and source uniqueness, motion validation, voice provenance, caption-waveform binding, evidence-led asset references, audio isolation, rights and privacy states, continuous authenticated Linko capture, derivative-script independence, structured CTA truth, and release approvals. In release mode it independently probes `render/final.mp4` and requires a passing `qa/report.json` whose path, SHA-256, and media parameters match that exact file.
 
 Automated success does not validate argument quality, caption readability, privacy content, legal rights, recording authenticity, voice naturalness, or taste.
 
@@ -40,7 +42,7 @@ Review the exact file on a phone with sound and muted. Verify:
 - factual fidelity and attribution;
 - the ablation test without Linko footage;
 - pace and voice naturalness;
-- caption size, wrapping, and safe areas;
+- caption size, wrapping, safe areas, and timing with sound and muted;
 - product-capture truthfulness and privacy;
 - third-party excerpt rights;
 - CTA and destination truthfulness.

@@ -14,9 +14,11 @@ The workflow is knowledge-first:
 2. separate source claims from the creator's interpretation;
 3. choose one opinionated, supportable thesis;
 4. write a conversational micro-essay;
-5. use real motion footage and an authorized Linko research trail;
-6. render a review cut and run deterministic media QA;
-7. keep privacy, rights, authenticity, and publication behind human approval gates.
+5. approve voice takes and unique source shots before rough cut;
+6. capture one continuous authorized Linko knowledge workflow;
+7. bind captions to the approved waveform and verify audio isolation;
+8. render a review cut and run deterministic media QA;
+9. keep privacy, rights, authenticity, and publication behind human approval gates.
 
 Linko appears naturally near the end as the place where an idea is saved and connected. It is not treated as a feature-list product demo.
 
@@ -81,6 +83,7 @@ research.md
 script.md
 shot-plan.json
 asset-manifest.json
+audio/voice-provenance.json
 render/draft.mp4
 qa/contact-sheet.png
 qa/report.json

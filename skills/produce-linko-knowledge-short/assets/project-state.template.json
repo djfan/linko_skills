@@ -3,6 +3,17 @@
   "status": "draft",
   "stage": "preflight",
   "blocker": null,
+  "deliverable": {
+    "type": "main",
+    "parent_project": null,
+    "dedicated_script_approved": true
+  },
+  "editorial_review": {
+    "source_mode": "evidence-led",
+    "source_mode_changed_since_script_approval": false,
+    "cold_read_context_passed": false,
+    "evidence_boundary_approved": false
+  },
   "capabilities": {
     "linko_read": null,
     "linko_add_resource": null,
@@ -20,12 +31,26 @@
   },
   "approvals": {
     "editorial_angle": false,
-    "script_and_shot_plan": false,
+    "script": false,
+    "voice_audition": false,
+    "source_shots": false,
     "rights": false,
     "privacy": false,
+    "linko_capture": false,
+    "rough_cut": false,
+    "captions": false,
     "phone_qa": false,
     "exact_final_file": false,
     "publication_destination": false
+  },
+  "checkpoints": {
+    "script_approval": {"result": null, "evidence": null},
+    "voice_audition": {"result": null, "evidence": null},
+    "source_shot_approval": {"result": null, "evidence": null},
+    "linko_capture_approval": {"result": null, "evidence": null},
+    "rough_cut": {"result": null, "evidence": null},
+    "caption_phone_qa": {"result": null, "evidence": null},
+    "release": {"result": null, "evidence": null}
   },
   "manual_cleanup": []
 }

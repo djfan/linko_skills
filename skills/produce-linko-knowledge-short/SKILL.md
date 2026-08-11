@@ -58,13 +58,14 @@ Keep these outputs predictable:
 - `script.md`
 - `shot-plan.json`
 - `asset-manifest.json`
+- `audio/voice-provenance.json`
 - `render/draft.mp4`
 - `qa/contact-sheet.png`
 - `qa/report.json`
 - `qa/qa-report.md`
 - `publish-copy.md`
 
-Track the stage and approvals in `project-state.json`. Use `draft`, `blocked`, `review-ready`, `publish-approved`, or `published` as status values. Never imply that `draft` is publishable.
+Track the stage and approvals in `project-state.json`. Use `draft`, `blocked`, `review-ready`, `publish-approved`, or `published` as status values. Move through script approval, voice audition, source-shot approval, Linko capture approval, rough cut, caption/phone QA, and release as separate checkpoints. Record `PASS`, `REVISE`, or `BLOCKED` plus evidence at every checkpoint. Never imply that `draft` is publishable.
 
 ## Execute the workflow
 
@@ -111,9 +112,9 @@ Pass the deletion test: removing the Linko footage and outro must leave a comple
 
 ### 5. Lock the editorial package and design the shot plan
 
-Obtain approval of the central claim, tone, language, narrator brief, CTA truth, and approximate duration before expensive media work.
+Obtain approval of the central claim, tone, language, narrator brief, CTA truth, and approximate duration before expensive media work. If the usable source mode changes after script approval—for example, an evidence-bearing interview is removed and only trailer or B-roll remains—repeat the cold-read context test and evidence-boundary approval before proceeding.
 
-Assign every sentence a visual purpose. Prefer real motion from the primary source, interview, licensed B-roll, or authorized product recording. Use trailer or cinematic footage as emotional support, not as the evidence-bearing core.
+Assign every sentence a visual purpose. For each motion shot, record the source time range, visual role, unique source-shot ID, and `audio_policy: discard | intentional`. Do not disguise one source window as several clips through alternate crops. Before rough cut, approve a contact sheet and timecode table that demonstrate enough independent source motion for the intended 2–4 second rhythm. Prefer real motion from the primary source, interview, licensed B-roll, or authorized product recording. Use trailer or cinematic footage as emotional support, not as the evidence-bearing core.
 
 Place Linko in approximately the final 15–20% unless the story requires otherwise. Show a real save, note, connection, or related-resource action that explains why the idea is worth keeping. Avoid feature lists.
 
@@ -123,19 +124,23 @@ Use zooms only to direct attention. Do not animate a screenshot and call it a sc
 
 Use a dedicated Linko demo account and synthetic or approved content. Capture the product at a readable desktop size such as 1440×900, then crop and pan inside the 9:16 canvas. Hide notifications, unrelated notes, identifiers, and private recommendations.
 
-Use deterministic browser automation for known flows and computer use only for exploration or recovery. Do not alter OAuth, tokens, or Linko authentication inside this skill. When final capture requires an unavailable authenticated session, set `status` to `blocked` and `blocker` to `authenticated-capture-unavailable`. A screenshot prototype may remain a disclosed draft but can never satisfy final capture.
+Use deterministic browser automation for known flows and computer use only for exploration or recovery. Record one continuous master capture from source URL copy through Add Link, submit, Resource appearance, creation of a structured hierarchical Note beneath it, and Save or Publish. Allow editing to accelerate typing and network waits only. Validate timeline progression plus first/middle/final frame changes. Do not alter OAuth, tokens, or Linko authentication inside this skill. When final capture requires an unavailable authenticated session, set `status` to `blocked` and `blocker` to `authenticated-capture-unavailable`. A screenshot prototype may remain a disclosed draft but can never satisfy final capture.
 
 ### 7. Produce narration and audio continuity
 
 Create a voice brief that describes age range, region, conversational intent, pace, energy, pronunciation, and negative directions. Do not clone or imitate an identifiable person's voice without authorization.
 
-Generate or record two restrained takes when practical. Preserve natural breaths and varied sentence endings. Match the source clip to the narrator's perceived loudness, then bridge them with room tone, a short J-cut, and a subtle crossfade.
+Record provider, model, voice ID, speed, full performance instructions, generation date, take strategy, selected take, raw and clean paths and hashes, and every post-process operation in `audio/voice-provenance.json`. When no source audio is intentionally inserted, prefer two or three complete takes, audition the narration alone, and regenerate poor pacing instead of time-stretching it. Split generation only for source-audio insertion, provider limits, or an explicit performance need. Approve the voice before rough cut.
+
+Discard external video audio at ingest for VO-only projects and explicitly map only approved tracks at render. If source audio is intentional, mark it in the asset manifest and approve its loudness and transition treatment. Start the first rough cut without music unless the brief explicitly requires it.
 
 ### 8. Edit the review cut
 
-Render portrait video at 1080×1920 and 30 fps unless the destination requires otherwise. Keep captions inside mobile-safe margins, wrap them deliberately, and inspect frames where source subtitles or UI text could collide.
+Render portrait video at 1080×1920 and 30 fps unless the destination requires otherwise. Bind captions to the SHA-256 of the final approved narration waveform; any voice change invalidates the timings. Use semantic phrases of four to seven words by default, with two to five words for hooks or emphasis. Prefer one line and allow at most two. Place captions in the lower third over source footage and the upper third over Linko UI when needed for readability. Hand-correct line breaks and timing, then inspect the exact cut on a phone with sound and muted.
 
 Keep the final Linko action readable for several seconds. Default to the structured CTA type `generic` and copy such as `Follow for the next idea.` Classify any viewer-facing Linko access claim as `public-linko`, regardless of its wording, and use it only after verifying the exact public destination in both `project-state.json` and `publish-copy.md`.
+
+Treat 15- or 30-second cutdowns as separate editorial deliverables with their own approved scripts and pacing. Do not publish a truncation of the main cut. Let the approved waveform and readable Linko actions determine the main version's duration; do not speed up speech or product actions merely to hit an integer runtime.
 
 ### 9. Run technical and editorial QA
 

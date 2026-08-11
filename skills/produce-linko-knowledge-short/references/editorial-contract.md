@@ -60,3 +60,7 @@ Use a generic line such as `Follow for the next idea.` when no public Linko dest
 - **Overpacked essay:** several angles compete within one minute.
 - **Audio reset:** source audio feels pasted between unrelated narration takes.
 - **False CTA:** the ending promises a public note or follow action that does not exist.
+
+## Source-mode changes
+
+If an evidence-bearing interview or source moment is removed and the cut becomes trailer- or B-roll-led, repeat the cold-read context test and approve the evidence boundary again. Trailer footage may supply mood or an example, but it cannot replace factual support. The thesis must remain intelligible without interview audio.

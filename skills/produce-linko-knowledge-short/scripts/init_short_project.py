@@ -16,6 +16,7 @@ TEMPLATES = {
     "script.template.md": "script.md",
     "shot-plan.template.json": "shot-plan.json",
     "asset-manifest.template.json": "asset-manifest.json",
+    "voice-provenance.template.json": "audio/voice-provenance.json",
     "qa-report.template.md": "qa/qa-report.md",
     "publish-copy.template.md": "publish-copy.md",
     "release-checklist.template.md": "release-checklist.md",

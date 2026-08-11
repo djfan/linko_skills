@@ -32,19 +32,20 @@ An approved screenshot sequence may demonstrate layout in a draft, but it must b
 - Record around 1440×900 or another readable desktop size, then crop later.
 - Hide profile identifiers, notifications, unrelated recommendations, and private notes.
 - Verify that every note, resource, and connection shown exists as represented.
-- Record one action per clip with extra handles for editing.
+- Record one continuous master capture with extra handles for editing.
 
 Prefer deterministic Playwright recipes for known flows. Use computer use only for unfamiliar UI or selector recovery.
 
 ## Recommended capture recipe
 
-1. Open Add Resource.
-2. Paste or select the source.
-3. Submit and show the resource appearing.
-4. Open the relevant note.
-5. Reveal one connection or related item.
+1. Copy the source URL.
+2. Open Add Link.
+3. Paste and submit the URL.
+4. Show the Resource appearing.
+5. Create a structured hierarchical Note beneath the Resource.
+6. Save or Publish the Note.
 
-Remove network wait and dead cursor time in the edit. Keep the cursor visible when it explains an action.
+Keep the operation continuous in one master recording; edit only typing and network waits. Record the capture transport as native screen recording or browser-only screencast. Verify that the player timeline advances and that first, middle, and final frames change. Keep the cursor visible when it explains an action.
 
 ## CTA preflight
 

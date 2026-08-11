@@ -28,6 +28,12 @@
 - Linko authenticity and privacy:
 - Rights approval:
 - Voice provenance and naturalness:
+- Voice audition evidence:
+- Source-shot contact sheet and timecode review:
+- Motion timeline/frame-change validation:
+- Caption-to-waveform binding:
+- Phone QA with sound and muted:
+- Audio isolation or intentional-source-audio review:
 - CTA truthfulness:
 
 ## Open blockers

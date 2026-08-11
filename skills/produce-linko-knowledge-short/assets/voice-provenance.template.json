@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "provider": "",
+  "model": "",
+  "voice_id": "",
+  "speed": 1.0,
+  "performance_instructions": "",
+  "generated_at": "",
+  "generation_mode": "full-script",
+  "split_reason": null,
+  "take_count": 0,
+  "selected_take": null,
+  "auditioned_without_music": false,
+  "raw_audio": {"path": "", "sha256": null},
+  "clean_audio": {"path": "", "sha256": null},
+  "post_processing": [],
+  "time_stretch": {"used": false, "reason": null},
+  "human_approved": false
+}

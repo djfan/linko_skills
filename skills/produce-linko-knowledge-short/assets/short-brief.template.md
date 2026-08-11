@@ -14,6 +14,8 @@ After this Short, the viewer can explain:
 - Target duration:
 - Review destination:
 - Publication destination:
+- Deliverable type (`main` or `cutdown`):
+- Parent project for a cutdown:
 
 ## Editorial direction
 
