@@ -3,6 +3,12 @@
   "status": "draft",
   "stage": "preflight",
   "blocker": null,
+  "delivery_fps": null,
+  "cadence": {
+    "source_native_verified": false,
+    "frame_fabrication_approved": false,
+    "frame_fabrication_reason": null
+  },
   "deliverable": {
     "type": "main",
     "parent_project": null,
@@ -12,7 +18,9 @@
     "source_mode": "evidence-led",
     "source_mode_changed_since_script_approval": false,
     "cold_read_context_passed": false,
-    "evidence_boundary_approved": false
+    "evidence_boundary_approved": false,
+    "first_person_premise_verified": false,
+    "saved_object": null
   },
   "capabilities": {
     "linko_read": null,
@@ -24,8 +32,8 @@
     "public_cta_destination": null
   },
   "cta": {
-    "type": "generic",
-    "text": "Follow for the next idea.",
+    "type": "none",
+    "text": "",
     "public_destination_verified": false,
     "public_destination_url": null
   },
@@ -44,13 +52,34 @@
     "publication_destination": false
   },
   "checkpoints": {
-    "script_approval": {"result": null, "evidence": null},
-    "voice_audition": {"result": null, "evidence": null},
-    "source_shot_approval": {"result": null, "evidence": null},
-    "linko_capture_approval": {"result": null, "evidence": null},
-    "rough_cut": {"result": null, "evidence": null},
-    "caption_phone_qa": {"result": null, "evidence": null},
-    "release": {"result": null, "evidence": null}
+    "script_approval": {"result": null, "scope": "candidate-asset", "artifact_path": null, "sha256": null, "approved_for": null, "dependency_lock": {}},
+    "voice_audition": {"result": null, "scope": "candidate-asset", "artifact_path": null, "sha256": null, "approved_for": null, "dependency_lock": {"script_sha256": null}},
+    "source_shot_approval": {"result": null, "scope": "candidate-asset", "artifact_path": null, "sha256": null, "approved_for": null, "dependency_lock": {"delivery_fps": null}},
+    "linko_capture_approval": {"result": null, "scope": "candidate-asset", "artifact_path": null, "sha256": null, "approved_for": null, "dependency_lock": {"delivery_fps": null, "ui_geometry_signature": null}},
+    "rough_cut": {"result": null, "scope": "candidate-asset", "artifact_path": null, "sha256": null, "approved_for": null, "dependency_lock": {"script_sha256": null, "voice_sha256": null, "delivery_fps": null}},
+    "caption_phone_qa": {"result": null, "scope": "final-asset", "artifact_path": null, "sha256": null, "approved_for": null, "dependency_lock": {"voice_sha256": null, "delivery_fps": null}},
+    "release": {"result": null, "scope": "final-asset", "artifact_path": null, "sha256": null, "approved_for": null, "dependency_lock": {"final_sha256": null}}
+  },
+  "ui_geometry_signature": null,
+  "risk_proofs": {
+    "motion_capture": {"result": null, "artifact_path": null, "sha256": null},
+    "active_picture_crop": {"result": null, "artifact_path": null, "sha256": null},
+    "vertical_reframe": {"result": null, "artifact_path": null, "sha256": null},
+    "linko_flow": {"result": null, "artifact_path": null, "sha256": null},
+    "final_note_framing": {"result": null, "artifact_path": null, "sha256": null},
+    "authored_bridge": {"required": false, "result": null, "artifact_path": null, "sha256": null}
+  },
+  "post_lock_revision": {
+    "active": false,
+    "prior_canonical": {"path": null, "sha256": null},
+    "scoped_proof": {"path": null, "sha256": null},
+    "full_candidate": {"path": null, "sha256": null},
+    "changed_region": null,
+    "continuity_boundaries_reviewed": false,
+    "unchanged_streams_or_ranges_verified": false,
+    "candidate_passed": false,
+    "canonical_replaced": false,
+    "exact_file_qa_renewed": false
   },
   "manual_cleanup": []
 }

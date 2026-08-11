@@ -46,7 +46,7 @@ STAGES = {
 }
 APPROVED_RIGHTS = {"owned", "licensed", "public-domain", "authorized", "human-approved"}
 APPROVED_PRIVACY = {"approved", "not-applicable"}
-CTA_TYPES = {"generic", "public-linko"}
+CTA_TYPES = {"none", "generic", "public-linko"}
 CHECKPOINTS = (
     "script_approval",
     "voice_audition",
@@ -77,6 +77,10 @@ REQUIRED_QA_CHECKS = {
     "width",
     "height",
     "fps",
+    "frame_count",
+    "adjacent_exact_duplicates",
+    "max_duplicate_run",
+    "periodic_duplicate_cadence",
     "audio_stream",
     "integrated_lufs",
     "true_peak_dbtp",
@@ -201,6 +205,22 @@ def project_file(project: Path, value: Any) -> Path | None:
     except ValueError:
         return None
     return candidate
+
+
+def checked_file_ref(
+    checks: list[dict[str, Any]], project: Path, name: str, value: Any
+) -> Path | None:
+    reference = value if isinstance(value, dict) else {}
+    path = project_file(project, reference.get("path"))
+    checksum = reference.get("sha256")
+    passed = (
+        path is not None
+        and path.is_file()
+        and valid_sha256(checksum)
+        and sha256_file(path) == checksum
+    )
+    add_check(checks, name, passed, reference, "existing project file with matching SHA-256")
+    return path if passed else None
 
 
 def values_match(expected: Any, actual: Any) -> bool:
@@ -370,23 +390,56 @@ def main() -> int:
         ):
             add_check(checks, f"approval:{approval}", approvals.get(approval) is True, approvals.get(approval), "true")
 
+        delivery_fps = state.get("delivery_fps")
+        add_check(checks, "delivery_fps", delivery_fps in {24, 25, 30}, delivery_fps, "24, 25, or 30")
+        expected_format = shot_plan.get("format") if isinstance(shot_plan.get("format"), dict) else {}
+        add_check(checks, "shot_plan_delivery_fps", expected_format.get("delivery_fps") == delivery_fps, expected_format.get("delivery_fps"), repr(delivery_fps))
+        cadence_state = state.get("cadence") if isinstance(state.get("cadence"), dict) else {}
+        add_check(checks, "source_native_cadence", cadence_state.get("source_native_verified") is True, cadence_state.get("source_native_verified"), "true")
+        fabrication_allowed = cadence_state.get("frame_fabrication_approved") is False or bool(cadence_state.get("frame_fabrication_reason"))
+        add_check(checks, "frame_fabrication_policy", fabrication_allowed, cadence_state, "not approved or documented effect")
+
+        final_video_for_dependencies = project / "render/final.mp4"
+        clean_audio_for_dependencies = voice.get("clean_audio") if isinstance(voice.get("clean_audio"), dict) else {}
+        dependency_values = {
+            "script_sha256": sha256_file(project / "script.md"),
+            "voice_sha256": clean_audio_for_dependencies.get("sha256"),
+            "delivery_fps": delivery_fps,
+            "ui_geometry_signature": state.get("ui_geometry_signature"),
+            "final_sha256": sha256_file(final_video_for_dependencies) if final_video_for_dependencies.is_file() else None,
+        }
+        dependency_requirements = {
+            "voice_audition": ("script_sha256",),
+            "source_shot_approval": ("delivery_fps",),
+            "linko_capture_approval": ("delivery_fps", "ui_geometry_signature"),
+            "rough_cut": ("script_sha256", "voice_sha256", "delivery_fps"),
+            "caption_phone_qa": ("voice_sha256", "delivery_fps"),
+            "release": ("final_sha256",),
+        }
         checkpoints = state.get("checkpoints") if isinstance(state.get("checkpoints"), dict) else {}
         for checkpoint_name in CHECKPOINTS:
             checkpoint = checkpoints.get(checkpoint_name) if isinstance(checkpoints.get(checkpoint_name), dict) else {}
-            add_check(
-                checks,
-                f"checkpoint:{checkpoint_name}:result",
-                checkpoint.get("result") == "PASS",
-                checkpoint.get("result"),
-                "PASS",
-            )
-            add_check(
-                checks,
-                f"checkpoint:{checkpoint_name}:evidence",
-                isinstance(checkpoint.get("evidence"), str) and bool(checkpoint.get("evidence", "").strip()),
-                checkpoint.get("evidence"),
-                "non-empty review evidence path or reference",
-            )
+            add_check(checks, f"checkpoint:{checkpoint_name}:result", checkpoint.get("result") == "PASS", checkpoint.get("result"), "PASS")
+            add_check(checks, f"checkpoint:{checkpoint_name}:scope", checkpoint.get("scope") in {"candidate-asset", "final-asset"}, checkpoint.get("scope"), "candidate-asset or final-asset")
+            required_approval = "release" if checkpoint_name in {"caption_phone_qa", "release"} else {"rough-cut", "release"}
+            approved_for = checkpoint.get("approved_for")
+            approved = approved_for == required_approval if isinstance(required_approval, str) else approved_for in required_approval
+            add_check(checks, f"checkpoint:{checkpoint_name}:approved_for", approved, approved_for, "release" if isinstance(required_approval, str) else "rough-cut or release")
+            artifact = {"path": checkpoint.get("artifact_path"), "sha256": checkpoint.get("sha256")}
+            checked_file_ref(checks, project, f"checkpoint:{checkpoint_name}:artifact", artifact)
+            lock = checkpoint.get("dependency_lock") if isinstance(checkpoint.get("dependency_lock"), dict) else {}
+            for dependency in dependency_requirements.get(checkpoint_name, ()):
+                add_check(checks, f"checkpoint:{checkpoint_name}:dependency:{dependency}", lock.get(dependency) == dependency_values.get(dependency) and dependency_values.get(dependency) not in (None, ""), lock.get(dependency), repr(dependency_values.get(dependency)))
+
+        risk_proofs = state.get("risk_proofs") if isinstance(state.get("risk_proofs"), dict) else {}
+        for proof_name in ("motion_capture", "active_picture_crop", "vertical_reframe", "linko_flow", "final_note_framing"):
+            proof = risk_proofs.get(proof_name) if isinstance(risk_proofs.get(proof_name), dict) else {}
+            add_check(checks, f"risk_proof:{proof_name}:result", proof.get("result") == "PASS", proof.get("result"), "PASS")
+            checked_file_ref(checks, project, f"risk_proof:{proof_name}:artifact", {"path": proof.get("artifact_path"), "sha256": proof.get("sha256")})
+        bridge_proof = risk_proofs.get("authored_bridge") if isinstance(risk_proofs.get("authored_bridge"), dict) else {}
+        if bridge_proof.get("required") is True:
+            add_check(checks, "risk_proof:authored_bridge:result", bridge_proof.get("result") == "PASS", bridge_proof.get("result"), "PASS")
+            checked_file_ref(checks, project, "risk_proof:authored_bridge:artifact", {"path": bridge_proof.get("artifact_path"), "sha256": bridge_proof.get("sha256")})
 
         editorial_review = state.get("editorial_review") if isinstance(state.get("editorial_review"), dict) else {}
         add_check(
@@ -398,6 +451,8 @@ def main() -> int:
         )
         add_check(checks, "cold_read_context", editorial_review.get("cold_read_context_passed") is True, editorial_review.get("cold_read_context_passed"), "true")
         add_check(checks, "evidence_boundary", editorial_review.get("evidence_boundary_approved") is True, editorial_review.get("evidence_boundary_approved"), "true")
+        add_check(checks, "first_person_premise", editorial_review.get("first_person_premise_verified") is True, editorial_review.get("first_person_premise_verified"), "true")
+        add_check(checks, "saved_object", bool(editorial_review.get("saved_object")), editorial_review.get("saved_object"), "non-empty truthful saved object")
 
         deliverable = state.get("deliverable") if isinstance(state.get("deliverable"), dict) else {}
         deliverable_type = deliverable.get("type")
@@ -425,6 +480,27 @@ def main() -> int:
             motion = shot.get("motion_validation") if isinstance(shot.get("motion_validation"), dict) else {}
             add_check(checks, f"release_shot:{index}:timeline_progression", motion.get("current_time_progressed") is True, motion.get("current_time_progressed"), "true")
             add_check(checks, f"release_shot:{index}:dynamic_frames", motion.get("first_middle_final_pixel_change") is True, motion.get("first_middle_final_pixel_change"), "true")
+            add_check(checks, f"release_shot:{index}:continuous_motion", motion.get("continuous_motion_source") is True, motion.get("continuous_motion_source"), "true")
+            add_check(checks, f"release_shot:{index}:not_screenshot_sequence", motion.get("screenshot_sequence") is False, motion.get("screenshot_sequence"), "false")
+            expected_shot_frames = (source_end - source_start) * delivery_fps if isinstance(source_start, (int, float)) and isinstance(source_end, (int, float)) and isinstance(delivery_fps, (int, float)) else None
+            add_check(checks, f"release_shot:{index}:frame_count", isinstance(motion.get("frame_count"), int) and expected_shot_frames is not None and abs(motion.get("frame_count") - expected_shot_frames) <= 1, motion.get("frame_count"), f"source duration × fps ± 1 ({expected_shot_frames})")
+            add_check(checks, f"release_shot:{index}:duplicate_run", isinstance(motion.get("max_duplicate_run"), int) and motion.get("max_duplicate_run") <= 1, motion.get("max_duplicate_run"), "<= 1")
+            add_check(checks, f"release_shot:{index}:periodic_duplicates", motion.get("periodic_duplicates_detected") is False, motion.get("periodic_duplicates_detected"), "false")
+            source_media = shot.get("source_media") if isinstance(shot.get("source_media"), dict) else {}
+            decoded_ok = all(isinstance(source_media.get(field), int) and source_media.get(field) > 0 for field in ("decoded_width", "decoded_height", "active_width", "active_height", "crop_width", "crop_height"))
+            add_check(checks, f"release_shot:{index}:source_dimensions", decoded_ok, source_media, "positive decoded, active-picture, and crop dimensions")
+            effective_pixels_ok = decoded_ok and source_media.get("active_width") >= 1280 and source_media.get("active_height") >= 720 and source_media.get("crop_width") >= 360 and source_media.get("crop_height") >= 640
+            add_check(checks, f"release_shot:{index}:effective_source_pixels", effective_pixels_ok, source_media, "active >= 1280x720 and crop >= 360x640")
+            add_check(checks, f"release_shot:{index}:upscale_ratio", isinstance(source_media.get("upscale_ratio"), (int, float)) and 0 < source_media.get("upscale_ratio") <= 3.0, source_media.get("upscale_ratio"), "0 < ratio <= 3.0")
+            add_check(checks, f"release_shot:{index}:source_fps", source_media.get("source_fps") == delivery_fps, source_media.get("source_fps"), repr(delivery_fps))
+            add_check(checks, f"release_shot:{index}:capture_fps", source_media.get("capture_fps") == delivery_fps, source_media.get("capture_fps"), repr(delivery_fps))
+            add_check(checks, f"release_shot:{index}:capture_transport", source_media.get("capture_transport") in {"viewport", "native-screen", "video-capture-stream", "browser-screencast", "source-file"}, source_media.get("capture_transport"), "approved capture transport")
+            add_check(checks, f"release_shot:{index}:reframe_strategy", shot.get("reframe_strategy") in {"subject-aware-crop", "clean-edge-extension", "fit"}, shot.get("reframe_strategy"), "subject-aware-crop, clean-edge-extension, or fit")
+            for field in ("subject_safe_space_reviewed", "player_ui_absent", "black_edges_absent", "not_stretched"):
+                add_check(checks, f"release_shot:{index}:{field}", shot.get(field) is True, shot.get(field), "true")
+            add_check(checks, f"release_shot:{index}:burned_text", shot.get("burned_text_status") in {"none", "cleanly-cropped"}, shot.get("burned_text_status"), "none or cleanly-cropped")
+            crop_evidence = project_file(project, shot.get("crop_100_percent_evidence"))
+            add_check(checks, f"release_shot:{index}:crop_evidence", crop_evidence is not None and crop_evidence.is_file(), shot.get("crop_100_percent_evidence"), "existing 100% crop evidence")
 
         source_review = shot_plan.get("source_shot_review") if isinstance(shot_plan.get("source_shot_review"), dict) else {}
         add_check(checks, "source_shot_review_approved", source_review.get("approved") is True, source_review.get("approved"), "true")
@@ -458,6 +534,26 @@ def main() -> int:
             add_check(checks, f"voice:{variant}:sha256", path is not None and path.is_file() and valid_sha256(checksum) and sha256_file(path) == checksum, checksum, "hash of voice artifact")
         time_stretch = voice.get("time_stretch") if isinstance(voice.get("time_stretch"), dict) else {}
         add_check(checks, "voice:no_unjustified_time_stretch", time_stretch.get("used") is False or bool(time_stretch.get("reason")), time_stretch, "unused or documented reason")
+        clean_voice = voice.get("clean_audio") if isinstance(voice.get("clean_audio"), dict) else {}
+        add_check(checks, "voice:locked_take_hash", voice.get("selected_take_locked_sha256") == clean_voice.get("sha256") and valid_sha256(voice.get("selected_take_locked_sha256")), voice.get("selected_take_locked_sha256"), "approved clean-audio SHA-256")
+        word_count = voice.get("script_word_count")
+        actual_duration = voice.get("actual_duration_seconds")
+        actual_wpm = voice.get("actual_wpm")
+        measured_wpm = word_count / actual_duration * 60 if isinstance(word_count, int) and word_count > 0 and isinstance(actual_duration, (int, float)) and actual_duration > 0 else None
+        add_check(checks, "voice:measured_pacing", measured_wpm is not None and isinstance(actual_wpm, (int, float)) and math.isclose(actual_wpm, measured_wpm, abs_tol=0.5), actual_wpm, repr(measured_wpm))
+        add_check(checks, "voice:pause_brief", bool(voice.get("pause_brief")), voice.get("pause_brief"), "non-empty")
+        transcript = voice.get("transcript") if isinstance(voice.get("transcript"), dict) else {}
+        checked_file_ref(checks, project, "voice:transcript", transcript)
+        add_check(checks, "voice:transcript_drift", isinstance(transcript.get("wer"), (int, float)) and 0 <= transcript.get("wer") <= 0.02, transcript.get("wer"), "0..0.02")
+        pronunciations = voice.get("pronunciation_checklist")
+        pronunciations_ok = isinstance(pronunciations, list) and bool(pronunciations) and all(isinstance(item, dict) and item.get("status") == "approved" and bool(item.get("term")) for item in pronunciations)
+        add_check(checks, "voice:pronunciation_review", pronunciations_ok, pronunciations, "non-empty approved checklist")
+        add_check(checks, "voice:long_pause_count", isinstance(voice.get("long_pause_count"), int) and voice.get("long_pause_count") >= 0, voice.get("long_pause_count"), ">= 0")
+        add_check(checks, "voice:audition_decision", voice.get("audition_decision") == "PASS", voice.get("audition_decision"), "PASS")
+        add_check(checks, "voice:audible_traits_only", voice.get("audible_traits_only") is True, voice.get("audible_traits_only"), "true")
+        target_wpm = voice.get("target_wpm") if isinstance(voice.get("target_wpm"), dict) else {}
+        in_target = isinstance(actual_wpm, (int, float)) and isinstance(target_wpm.get("min"), (int, float)) and isinstance(target_wpm.get("max"), (int, float)) and target_wpm.get("min") <= actual_wpm <= target_wpm.get("max")
+        add_check(checks, "voice:pacing_target_or_override", in_target or bool(voice.get("creative_spec_override")), {"actual_wpm": actual_wpm, "target": target_wpm, "override": voice.get("creative_spec_override")}, "within target or explicit override")
 
         captions = shot_plan.get("captions") if isinstance(shot_plan.get("captions"), dict) else {}
         clean_audio = voice.get("clean_audio") if isinstance(voice.get("clean_audio"), dict) else {}
@@ -465,6 +561,20 @@ def main() -> int:
         for field in ("timing_manually_corrected", "phone_sound_qa", "phone_muted_qa"):
             add_check(checks, f"captions:{field}", captions.get(field) is True, captions.get(field), "true")
         add_check(checks, "captions:max_lines", captions.get("max_lines") == 2, captions.get("max_lines"), "2")
+        checked_file_ref(checks, project, "captions:alignment", captions.get("alignment"))
+        add_check(checks, "captions:event_count", isinstance(captions.get("event_count"), int) and captions.get("event_count") > 0, captions.get("event_count"), "> 0")
+        style = captions.get("style") if isinstance(captions.get("style"), dict) else {}
+        add_check(checks, "captions:style", bool(style.get("font")) and isinstance(style.get("size_px"), (int, float)) and style.get("size_px") > 0, style, "font and positive size")
+        add_check(checks, "captions:highlight_count", isinstance(captions.get("highlight_count"), int) and 0 <= captions.get("highlight_count") <= captions.get("event_count", -1), captions.get("highlight_count"), "0..event_count")
+        collision = captions.get("collision_review") if isinstance(captions.get("collision_review"), dict) else {}
+        for field in ("burned_source_text_reviewed", "platform_controls_reviewed"):
+            add_check(checks, f"captions:collision:{field}", collision.get(field) is True, collision.get(field), "true")
+        for field in ("first_frame", "middle_frame", "final_frame"):
+            evidence_path = project_file(project, collision.get(field))
+            add_check(checks, f"captions:collision:{field}", evidence_path is not None and evidence_path.is_file(), collision.get(field), "existing evidence frame")
+        platform_export = captions.get("platform_export") if isinstance(captions.get("platform_export"), dict) else {}
+        if platform_export.get("path") or platform_export.get("sha256"):
+            checked_file_ref(checks, project, "captions:platform_export", platform_export)
 
         final_video = project / "render/final.mp4"
         final_exists = final_video.is_file()
@@ -558,7 +668,7 @@ def main() -> int:
 
         expected_format = shot_plan.get("format") if isinstance(shot_plan.get("format"), dict) else {}
         if probed_media is not None:
-            for field in ("width", "height", "fps"):
+            for field in ("width", "height"):
                 add_check(
                     checks,
                     f"final_format:{field}",
@@ -566,6 +676,7 @@ def main() -> int:
                     probed_media.get(field),
                     repr(expected_format.get(field)),
                 )
+            add_check(checks, "final_format:fps", values_match(delivery_fps, probed_media.get("fps")), probed_media.get("fps"), repr(delivery_fps))
 
         research = (project / "research.md").read_text(encoding="utf-8")
         for asset in assets_by_id.values():
@@ -628,6 +739,14 @@ def main() -> int:
                     )
                     valid_ids = valid_ids and identifier_valid and row_valid
                 add_check(checks, f"release_asset:{asset_id}:evidence_ids", valid_ids, evidence_ids, "non-empty IDs present in research.md")
+            if asset.get("kind") == "authored-bridge":
+                add_check(checks, f"bridge:{asset_id}:asset_type", asset.get("asset_type") == "authored-bridge", asset.get("asset_type"), "authored-bridge")
+                add_check(checks, f"bridge:{asset_id}:truth_boundary", asset.get("claims_product_success") is False and asset.get("ends_before_real_action") is True, {"claims_product_success": asset.get("claims_product_success"), "ends_before_real_action": asset.get("ends_before_real_action")}, "no product success claim and stop before real action")
+                match_cut = asset.get("match_cut") if isinstance(asset.get("match_cut"), dict) else {}
+                add_check(checks, f"bridge:{asset_id}:real_linko_target", match_cut.get("real_asset_id") in {item.get("id") for item in linko_assets}, match_cut.get("real_asset_id"), "Linko capture asset id")
+                for field in ("fps_match", "geometry_match", "text_match", "url_state_match", "button_state_match"):
+                    add_check(checks, f"bridge:{asset_id}:{field}", match_cut.get(field) is True, match_cut.get(field), "true")
+                checked_file_ref(checks, project, f"bridge:{asset_id}:match_proof", match_cut.get("proof"))
 
         live_linko = any(
             asset.get("capture_mode") == "continuous-master"
@@ -647,13 +766,26 @@ def main() -> int:
             capabilities.get("linko_authenticated_browser"),
             "true",
         )
+        for asset in linko_assets:
+            asset_id = asset.get("id")
+            for field in ("raw_master", "edited_cut", "edit_decision_list"):
+                checked_file_ref(checks, project, f"linko:{asset_id}:{field}", asset.get(field))
+            transition = asset.get("transition_integrity") if isinstance(asset.get("transition_integrity"), dict) else {}
+            for field in ("clicks", "pointer_motion", "scrolls", "loading_to_success", "resource_appearance", "save_state_change"):
+                add_check(checks, f"linko:{asset_id}:transition:{field}", transition.get(field) is True, transition.get(field), "true")
+            semantic = asset.get("semantic_qa") if isinstance(asset.get("semantic_qa"), dict) else {}
+            add_check(checks, f"linko:{asset_id}:saved_object", semantic.get("saved_object") == editorial_review.get("saved_object") and bool(semantic.get("saved_object")), semantic.get("saved_object"), repr(editorial_review.get("saved_object")))
+            for field in ("note_title_readable", "requested_hierarchy_readable", "open_question_readable", "no_post_production_tag_overlay"):
+                add_check(checks, f"linko:{asset_id}:semantic:{field}", semantic.get(field) is True, semantic.get(field), "true")
+            if semantic.get("requested_note_tag"):
+                add_check(checks, f"linko:{asset_id}:note_tag_owner", semantic.get("note_tag_owner_verified_in_ui") is True, semantic.get("note_tag_owner_verified_in_ui"), "true")
 
         cta = state.get("cta") if isinstance(state.get("cta"), dict) else {}
         cta_type = cta.get("type")
         publish_frontmatter = load_frontmatter(project / "publish-copy.md")
         publish_cta_type = publish_frontmatter.get("cta_type")
-        add_check(checks, "cta_type", cta_type in CTA_TYPES, cta_type, "generic or public-linko")
-        add_check(checks, "publish_cta_type", publish_cta_type in CTA_TYPES, publish_cta_type, "generic or public-linko")
+        add_check(checks, "cta_type", cta_type in CTA_TYPES, cta_type, "none, generic, or public-linko")
+        add_check(checks, "publish_cta_type", publish_cta_type in CTA_TYPES, publish_cta_type, "none, generic, or public-linko")
         add_check(checks, "cta_type_matches_publish_copy", publish_cta_type == cta_type, publish_cta_type, repr(cta_type))
         if cta_type == "public-linko":
             add_check(checks, "public_cta_verified", cta.get("public_destination_verified") is True, cta.get("public_destination_verified"), "true")
@@ -661,6 +793,42 @@ def main() -> int:
             publish_destination = publish_frontmatter.get("cta_destination")
             add_check(checks, "public_cta_url", valid_http_url(state_destination), state_destination, "valid http(s) URL")
             add_check(checks, "public_cta_destination_matches", publish_destination == state_destination, publish_destination, repr(state_destination))
+
+        publishing_fields = (
+            "primary_title",
+            "title_variant_a",
+            "title_variant_b",
+            "language",
+            "category",
+            "audience",
+            "paid_promotion_decision",
+            "remixing_decision",
+            "related_video",
+            "visibility",
+            "cover_timestamp",
+            "cover_proof_path",
+            "policy_verified_at",
+            "description_ready",
+            "hashtags",
+            "studio_tags",
+            "source_attribution_ready",
+            "synthetic_altered_content_decision",
+            "pinned_comment",
+            "audience_question",
+            "platform_link_behavior",
+        )
+        for field in publishing_fields:
+            add_check(checks, f"publishing:{field}", isinstance(publish_frontmatter.get(field), str) and bool(publish_frontmatter.get(field, "").strip()), publish_frontmatter.get(field), "non-empty")
+        cover_proof = project_file(project, publish_frontmatter.get("cover_proof_path"))
+        add_check(checks, "publishing:cover_proof", cover_proof is not None and cover_proof.is_file(), publish_frontmatter.get("cover_proof_path"), "existing project file")
+
+        post_lock = state.get("post_lock_revision") if isinstance(state.get("post_lock_revision"), dict) else {}
+        if post_lock.get("active") is True:
+            for field in ("prior_canonical", "scoped_proof", "full_candidate"):
+                checked_file_ref(checks, project, f"post_lock:{field}", post_lock.get(field))
+            add_check(checks, "post_lock:changed_region", bool(post_lock.get("changed_region")), post_lock.get("changed_region"), "non-empty")
+            for field in ("continuity_boundaries_reviewed", "unchanged_streams_or_ranges_verified", "candidate_passed", "canonical_replaced", "exact_file_qa_renewed"):
+                add_check(checks, f"post_lock:{field}", post_lock.get(field) is True, post_lock.get(field), "true")
 
     passed = all(check["passed"] for check in checks)
     report = {

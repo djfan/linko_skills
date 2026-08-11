@@ -28,7 +28,7 @@ For a 45–60 second Short, begin around 110–140 total spoken words and adjust
 
 ## Linko placement
 
-Use Linko during approximately the final 15–20% to add the source, reveal the saved resource, open a relevant note, and show one meaningful connection. Do not list features in VO. Let the action imply capture, connection, or continuation while the knowledge narration continues.
+Reserve enough time for every required Linko state to remain readable, often 12–20 seconds. Do not compress product truth to satisfy a fixed percentage. Add the source, reveal the saved resource, open a relevant note, and show one meaningful connection. Do not list features in VO. Let the action imply capture, connection, or continuation while the knowledge narration continues.
 
 Use a real screen recording for final release. A screenshot prototype is only a disclosed draft and remains a release blocker.
 
@@ -49,7 +49,7 @@ Do not clone or closely imitate an identifiable person's voice without authoriza
 
 ## Outro truthfulness
 
-Use a generic line such as `Follow for the next idea.` when no public Linko destination exists. Add `Full notes in Linko` or `Follow my notes on Linko` only after verifying that viewers can access the promised destination and action.
+Use no CTA or a truthful audience question when no destination action is useful. Add `Full notes in Linko` or `Follow my notes on Linko` only after verifying that viewers can access the promised destination and action. Do not add a silent tail merely to hit a round duration.
 
 ## Common failure patterns
 
@@ -64,3 +64,7 @@ Use a generic line such as `Follow for the next idea.` when no public Linko dest
 ## Source-mode changes
 
 If an evidence-bearing interview or source moment is removed and the cut becomes trailer- or B-roll-led, repeat the cold-read context test and approve the evidence boundary again. Trailer footage may supply mood or an example, but it cannot replace factual support. The thesis must remain intelligible without interview audio.
+
+## Story and first-person truth
+
+Use the optional arc `encounter → expectation → anomaly → investigation → concept → changed interpretation → saved question` when a thesis-only treatment feels like a knowledge card. Verify whether the creator watched the film, watched the trailer, or read the story. Describe the exact object saved in Linko; saving a trailer is not saving a film.

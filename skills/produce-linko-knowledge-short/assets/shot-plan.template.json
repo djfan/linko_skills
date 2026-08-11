@@ -4,7 +4,7 @@
   "format": {
     "width": 1080,
     "height": 1920,
-    "fps": 30,
+    "delivery_fps": null,
     "target_duration_seconds": 60,
     "safe_margin_percent": 7
   },
@@ -22,7 +22,13 @@
     "linko_placement": "upper-third",
     "timing_manually_corrected": false,
     "phone_sound_qa": false,
-    "phone_muted_qa": false
+    "phone_muted_qa": false,
+    "alignment": {"path": null, "sha256": null},
+    "event_count": 0,
+    "style": {"font": null, "size_px": null, "position_policy": "source-lower-linko-upper"},
+    "highlight_count": 0,
+    "collision_review": {"burned_source_text_reviewed": false, "platform_controls_reviewed": false, "first_frame": null, "middle_frame": null, "final_frame": null},
+    "platform_export": {"path": null, "sha256": null}
   },
   "shots": [
     {
@@ -38,8 +44,22 @@
       "audio_policy": "discard",
       "motion_validation": {
         "current_time_progressed": false,
-        "first_middle_final_pixel_change": false
+        "first_middle_final_pixel_change": false,
+        "continuous_motion_source": false,
+        "screenshot_sequence": false,
+        "frame_count": null,
+        "adjacent_exact_duplicates": null,
+        "max_duplicate_run": null,
+        "periodic_duplicates_detected": null
       },
+      "source_media": {"decoded_width": null, "decoded_height": null, "source_fps": null, "capture_fps": null, "active_width": null, "active_height": null, "crop_width": null, "crop_height": null, "upscale_ratio": null, "capture_transport": null},
+      "reframe_strategy": null,
+      "subject_safe_space_reviewed": false,
+      "crop_100_percent_evidence": null,
+      "burned_text_status": null,
+      "player_ui_absent": false,
+      "black_edges_absent": false,
+      "not_stretched": false,
       "voiceover": "",
       "caption": "",
       "focus": "",
@@ -58,8 +78,22 @@
       "audio_policy": "discard",
       "motion_validation": {
         "current_time_progressed": false,
-        "first_middle_final_pixel_change": false
+        "first_middle_final_pixel_change": false,
+        "continuous_motion_source": false,
+        "screenshot_sequence": false,
+        "frame_count": null,
+        "adjacent_exact_duplicates": null,
+        "max_duplicate_run": null,
+        "periodic_duplicates_detected": null
       },
+      "source_media": {"decoded_width": null, "decoded_height": null, "source_fps": null, "capture_fps": null, "active_width": null, "active_height": null, "crop_width": null, "crop_height": null, "upscale_ratio": null, "capture_transport": null},
+      "reframe_strategy": null,
+      "subject_safe_space_reviewed": false,
+      "crop_100_percent_evidence": null,
+      "burned_text_status": null,
+      "player_ui_absent": false,
+      "black_edges_absent": false,
+      "not_stretched": false,
       "voiceover": "",
       "caption": "",
       "focus": "saved resource to related note",

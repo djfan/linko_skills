@@ -35,7 +35,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-duration", type=float, default=75.0)
     parser.add_argument("--width", type=int, default=1080)
     parser.add_argument("--height", type=int, default=1920)
-    parser.add_argument("--fps", type=float, default=30.0)
+    parser.add_argument("--fps", type=float, help="Expected project-native delivery fps (24, 25, or 30).")
+    parser.add_argument("--project-state", type=Path, help="Read delivery_fps from project-state.json.")
     parser.add_argument("--fps-tolerance", type=float, default=0.1)
     parser.add_argument("--min-lufs", type=float, default=-18.0)
     parser.add_argument("--max-lufs", type=float, default=-14.0)
@@ -43,6 +44,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--black-duration", type=float, default=0.30)
     parser.add_argument("--silence-duration", type=float, default=0.90)
     parser.add_argument("--silence-threshold", default="-45dB")
+    parser.add_argument("--max-duplicate-ratio", type=float, default=0.02)
+    parser.add_argument("--max-duplicate-run", type=int, default=1)
     return parser.parse_args()
 
 
@@ -153,6 +156,75 @@ def detect_segments(
     return black, silence
 
 
+def measure_cadence(video: Path) -> dict[str, Any]:
+    result = run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(video),
+            "-map",
+            "0:v:0",
+            "-f",
+            "framemd5",
+            "-",
+        ]
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "frame cadence analysis failed")
+    hashes = [
+        line.rsplit(",", 1)[-1].strip()
+        for line in result.stdout.splitlines()
+        if line and not line.startswith("#") and "," in line
+    ]
+    duplicate_indices = [
+        index for index in range(1, len(hashes)) if hashes[index] == hashes[index - 1]
+    ]
+    duplicate_run = 0
+    max_run = 0
+    for index in range(1, len(hashes)):
+        if hashes[index] == hashes[index - 1]:
+            duplicate_run += 1
+            max_run = max(max_run, duplicate_run)
+        else:
+            duplicate_run = 0
+    intervals = [
+        duplicate_indices[index] - duplicate_indices[index - 1]
+        for index in range(1, len(duplicate_indices))
+    ]
+    periodic = any(
+        intervals[index] == intervals[index - 1] == intervals[index - 2]
+        for index in range(2, len(intervals))
+    )
+    return {
+        "frame_count": len(hashes),
+        "adjacent_exact_duplicates": len(duplicate_indices),
+        "duplicate_ratio": len(duplicate_indices) / max(len(hashes) - 1, 1),
+        "max_duplicate_run": max_run,
+        "periodic_duplicate_cadence": periodic,
+        "duplicate_indices": duplicate_indices,
+    }
+
+
+def expected_fps(args: argparse.Namespace) -> float:
+    state_fps: Any = None
+    if args.project_state:
+        state_path = args.project_state.expanduser().resolve()
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state_fps = state.get("delivery_fps")
+        except (OSError, json.JSONDecodeError, AttributeError) as error:
+            raise RuntimeError(f"cannot read project delivery_fps: {error}") from error
+    if args.fps is not None and state_fps is not None and not math.isclose(args.fps, float(state_fps), abs_tol=1e-6):
+        raise RuntimeError("--fps does not match project-state delivery_fps")
+    value = args.fps if args.fps is not None else state_fps
+    if not isinstance(value, (int, float)) or float(value) not in {24.0, 25.0, 30.0}:
+        raise RuntimeError("declare delivery_fps as 24, 25, or 30 via --fps or --project-state")
+    return float(value)
+
+
 def make_contact_sheet(video: Path, destination: Path, duration: float) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     sample_rate = 9.0 / max(duration, 0.001)
@@ -199,6 +271,7 @@ def main() -> int:
         return 2
 
     try:
+        delivery_fps = expected_fps(args)
         metadata = probe(video)
         streams = metadata.get("streams", [])
         video_stream = next(stream for stream in streams if stream.get("codec_type") == "video")
@@ -209,6 +282,7 @@ def main() -> int:
         black, silence = detect_segments(
             video, args.black_duration, args.silence_threshold, args.silence_duration
         )
+        cadence = measure_cadence(video)
     except (KeyError, StopIteration, ValueError, RuntimeError, json.JSONDecodeError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
@@ -223,7 +297,12 @@ def main() -> int:
     )
     add_check(checks, "width", video_stream.get("width") == args.width, video_stream.get("width"), str(args.width))
     add_check(checks, "height", video_stream.get("height") == args.height, video_stream.get("height"), str(args.height))
-    add_check(checks, "fps", math.isclose(fps, args.fps, abs_tol=args.fps_tolerance), fps, f"{args.fps} ± {args.fps_tolerance}")
+    add_check(checks, "fps", math.isclose(fps, delivery_fps, abs_tol=args.fps_tolerance), fps, f"{delivery_fps} ± {args.fps_tolerance}")
+    expected_frames = duration * delivery_fps
+    add_check(checks, "frame_count", abs(cadence["frame_count"] - expected_frames) <= 1.5, cadence["frame_count"], f"duration × {delivery_fps} ± 1.5")
+    add_check(checks, "adjacent_exact_duplicates", cadence["duplicate_ratio"] <= args.max_duplicate_ratio, {"count": cadence["adjacent_exact_duplicates"], "ratio": cadence["duplicate_ratio"]}, f"ratio <= {args.max_duplicate_ratio}")
+    add_check(checks, "max_duplicate_run", cadence["max_duplicate_run"] <= args.max_duplicate_run, cadence["max_duplicate_run"], f"<= {args.max_duplicate_run}")
+    add_check(checks, "periodic_duplicate_cadence", cadence["periodic_duplicate_cadence"] is False, cadence["periodic_duplicate_cadence"], "false")
     add_check(checks, "audio_stream", audio_stream is not None, bool(audio_stream), "present")
     if loudness:
         add_check(
@@ -254,6 +333,7 @@ def main() -> int:
             "width": video_stream.get("width"),
             "height": video_stream.get("height"),
             "fps": fps,
+            "frame_count": cadence["frame_count"],
             "audio_codec": audio_stream.get("codec_name") if audio_stream else None,
             "sample_rate": int(audio_stream.get("sample_rate", 0)) if audio_stream else None,
             "channels": audio_stream.get("channels") if audio_stream else None,
@@ -261,6 +341,7 @@ def main() -> int:
         "loudness": loudness,
         "black_segments": black,
         "silence_segments": silence,
+        "cadence": cadence,
         "checks": checks,
         "manual_gates": [
             "thesis and context completeness",

@@ -8,6 +8,7 @@
 - [ ] The script uses conversational language and provides necessary context.
 - [ ] A source-mode change triggered a new cold-read and evidence-boundary review.
 - [ ] A cutdown, if any, has its own approved script and pacing.
+- [ ] First-person premise and the exact saved object match what actually happened.
 
 ## Visual and audio
 
@@ -17,6 +18,9 @@
 - [ ] Voice provenance is recorded and any generated review voice is disclosed.
 - [ ] The approved voice take was auditioned without music before rough cut.
 - [ ] Motion shots have unique source windows plus timeline and frame-change evidence.
+- [ ] Project-native fps is locked end-to-end; frame count and duplicate cadence pass.
+- [ ] Effective source pixels, active-picture crop, upscale ratio, reframe, and 100% crops pass.
+- [ ] Any authored bridge stops before product action and has match-cut truth proof.
 - [ ] VO-only inputs have source audio discarded; intentional source audio has approved loudness and transitions.
 - [ ] Captions are bound to the approved waveform and were checked with sound and muted.
 
@@ -24,6 +28,7 @@
 
 - [ ] Linko capture shows only demo or approved data.
 - [ ] Linko is one continuous URL → Add Link → Resource → structured Note → Save/Publish master capture.
+- [ ] Raw Linko master, edited cut, EDL, transition integrity, and real UI/DOM state ownership pass.
 - [ ] Notifications, identifiers, and unrelated notes are absent.
 - [ ] Every third-party excerpt has owner, URL, timecode/page/line/section, linked evidence IDs, and a human-reviewed rights basis.
 - [ ] The outro promises only a destination or action that exists.
@@ -37,6 +42,9 @@
 ## Release authority
 
 - [ ] The human approved this exact file.
+- [ ] Checkpoints identify candidate/final asset scope, artifact hash, approval use, and current dependencies.
+- [ ] Risk-first micro-proofs pass before full rough cut.
+- [ ] Any post-lock revision preserved a backup and renewed exact-file QA.
 - [ ] The human approved the destination and publication action.
 - [ ] `project-state.json` status is `publish-approved`.
 - [ ] `validate_project.py . --release-ready` passes.

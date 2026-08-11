@@ -52,7 +52,7 @@ Avoid heavy compression that removes all human variation. Do not disguise a gene
 Default delivery:
 
 - 1080×1920;
-- 30 fps;
+- project-native 24, 25, or 30 fps, locked after source preflight;
 - H.264 video;
 - AAC audio at 48 kHz.
 
@@ -61,6 +61,10 @@ Parameterize these values when the platform differs. Keep important text inside 
 ## Source-shot approval
 
 Record `source_start_seconds`, `source_end_seconds`, `visual_role`, `unique_source_shot_id`, and `audio_policy` for every motion shot. Confirm player time progression and pixel change across the first, middle, and final frames. Before rough cut, review a contact sheet and timecode table. Alternate crops of the same raw time window remain one source shot.
+
+Also record decoded and active-picture dimensions, effective portrait crop pixels, upscale ratio, source/capture/output fps, capture transport, burned-text status, and a 100% crop. Prefer subject-aware crops for close shots and clean same-shot edge extension for wide shots. Reject unsafe center crops, stretching, player UI, black edges, screenshot-sequence motion, and periodic duplicate cadence.
+
+For narration, record word count, target and measured duration/WPM, transcript hash and WER, pronunciation review, pause brief, long-pause count, and the locked selected-take hash. Reject content drift before tone review. Express demographic direction only through audible performance traits.
 
 ## Main cuts and cutdowns
 

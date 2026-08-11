@@ -105,6 +105,7 @@ Run:
 
 ```bash
 python3 scripts/validate_short.py /path/to/final.mp4 \
+  --project-state /path/to/project-state.json \
   --report /path/to/qa/report.json \
   --contact-sheet /path/to/qa/contact-sheet.png
 
@@ -112,7 +113,7 @@ python3 scripts/validate_project.py /path/to/project
 python3 scripts/validate_project.py /path/to/project --release-ready
 ```
 
-The media validator checks duration, portrait format, frame rate, audio presence, loudness, true peak, black frames, and long silence, then records the exact file SHA-256. Release validation independently probes the final video and requires its path, hash, and media parameters to match a passing `qa/report.json`. It cannot approve factual accuracy, caption readability, privacy, rights, recording authenticity, or publication authority; those remain manual gates.
+The media validator checks duration, portrait format, project-native frame rate, frame count, duplicate cadence, audio presence, loudness, true peak, black frames, and long silence, then records the exact file SHA-256. Release validation independently probes the final video and requires its path, hash, and media parameters to match a passing `qa/report.json`. It also enforces scoped artifact checkpoints, effective source pixels, authored-bridge truth, Linko EDL/state ownership, voice/caption provenance, the publishing package, and post-lock renewal. Human editorial and rights decisions remain manual gates.
 
 ## Optional production tools
 
@@ -159,7 +160,7 @@ Open `asset-manifest.json` and resolve `rights_status`, `privacy_status`, `place
 
 ### The CTA fails validation
 
-Keep `cta_type` identical in `project-state.json` and the `publish-copy.md` frontmatter. Classify any viewer-facing Linko access promise as `public-linko`, regardless of wording, and provide the same verified public URL in both files. `generic` remains safe without a Linko URL.
+Keep `cta_type` identical in `project-state.json` and the `publish-copy.md` frontmatter. Classify any viewer-facing Linko access promise as `public-linko`, regardless of wording, and provide the same verified public URL in both files. Use `none` for no CTA or `generic` for a truthful non-Linko CTA or audience question.
 
 ### Release validation rejects the final video or QA report
 

@@ -72,6 +72,11 @@
       "timeline_progression_verified": false,
       "dynamic_frames_verified": false,
       "authenticated_session_verified": false,
+      "raw_master": {"path": null, "sha256": null},
+      "edited_cut": {"path": null, "sha256": null},
+      "edit_decision_list": {"path": null, "sha256": null},
+      "transition_integrity": {"clicks": false, "pointer_motion": false, "scrolls": false, "loading_to_success": false, "resource_appearance": false, "save_state_change": false},
+      "semantic_qa": {"saved_object": null, "note_title_readable": false, "requested_hierarchy_readable": false, "open_question_readable": false, "requested_note_tag": null, "note_tag_owner_verified_in_ui": false, "no_post_production_tag_overlay": false},
       "human_approved": false
     }
   ]
